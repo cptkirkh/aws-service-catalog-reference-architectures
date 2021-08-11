@@ -1,0 +1,250 @@
+{
+   "AWSTemplateFormatVersion": "2010-09-09T00:00:00.000Z",
+   "Description": "Relational Database",
+   "Metadata": {
+      "AWS::CloudFormation::Interface": {
+         "ParameterGroups": [
+            {
+               "Label": {
+                  "default": "Parent Stacks"
+               },
+               "Parameters": [
+                  "VPCStackName"
+               ]
+            },
+            {
+               "Label": {
+                  "default": "Database"
+               },
+               "Parameters": [
+                  "MasterUsername",
+                  "MasterPassword",
+                  "DatabaseInstanceIdentifier",
+                  "DatabaseInstanceType"
+               ]
+            }
+         ],
+         "ParameterLabels": {
+            "VPCStackName": {
+               "default": "Network Layer"
+            },
+            "MasterUsername": {
+               "default": "Master DB Username"
+            },
+            "MasterPassword": {
+               "default": "Master DB Password"
+            },
+            "DatabaseInstanceIdentifier": {
+               "default": "Database Instance Identifier"
+            },
+            "DatabaseInstanceType": {
+               "default": "Database Instance Type"
+            }
+         }
+      }
+   },
+   "Parameters": {
+      "VPCStackName": {
+         "Type": "String",
+         "MinLength": 3,
+         "MaxLength": 32,
+         "AllowedPattern": "(^vpc$|^[a-zA-Z][a-zA-Z0-9-]*-vpc$)",
+         "ConstraintDescription": "Please enter a valid VPC stack name"
+      },
+      "MasterUsername": {
+         "Type": "AWS::SSM::Parameter::Value<String>",
+         "Default": "master-db-username"
+      },
+      "MasterPassword": {
+         "Type": "AWS::SSM::Parameter::Value<String>",
+         "Default": "master-db-password"
+      },
+      "DatabaseInstanceIdentifier": {
+         "Type": "String",
+         "Default": "oracle"
+      },
+      "DatabaseInstanceType": {
+         "Type": "String",
+         "Default": "db.t3.micro"
+      }
+   },
+   "Resources": {
+      "DBSubnetGroup": {
+         "Type": "AWS::RDS::DBSubnetGroup",
+         "Properties": {
+            "DBSubnetGroupName": null,
+            "DBSubnetGroupDescription": "Private Subnet Group",
+            "SubnetIds": [
+               {
+                  "Fn::ImportValue": null
+               },
+               {
+                  "Fn::ImportValue": null
+               }
+            ]
+         }
+      },
+      "OptionGroup": {
+         "Type": "AWS::RDS::OptionGroup",
+         "Properties": {
+            "EngineName": "oracle-ee",
+            "MajorEngineVersion": 18.0,
+            "OptionGroupDescription": "A option group to enable Native Network Encryption",
+            "OptionConfigurations": [
+               {
+                  "OptionName": "NATIVE_NETWORK_ENCRYPTION",
+                  "OptionSettings": [
+                     {
+                        "Name": "SQLNET.CRYPTO_CHECKSUM_SERVER",
+                        "Value": "REQUIRED"
+                     },
+                     {
+                        "Name": "SQLNET.ENCRYPTION_TYPES_SERVER",
+                        "Value": "RC4_256,AES256"
+                     },
+                     {
+                        "Name": "SQLNET.ENCRYPTION_SERVER",
+                        "Value": "REQUIRED"
+                     },
+                     {
+                        "Name": "SQLNET.CRYPTO_CHECKSUM_TYPES_SERVER",
+                        "Value": "SHA1"
+                     }
+                  ]
+               }
+            ]
+         }
+      },
+      "DBInstance": {
+         "Type": "AWS::RDS::DBInstance",
+         "Properties": {
+            "AllocatedStorage": 20,
+            "DBInstanceClass": null,
+            "DBInstanceIdentifier": null,
+            "DBSubnetGroupName": null,
+            "Engine": "oracle-ee",
+            "EngineVersion": "18.0.0.0.ru-2020-04.rur-2020-04.r1",
+            "MasterUsername": null,
+            "MasterUserPassword": null,
+            "PubliclyAccessible": true,
+            "DBName": "ORCL",
+            "Port": 1525,
+            "OptionGroupName": null,
+            "BackupRetentionPeriod": 7,
+            "CharacterSetName": "AL32UTF8",
+            "LicenseModel": "bring-your-own-license",
+            "StorageType": "gp2",
+            "EnableCloudwatchLogsExports": [
+               "audit",
+               "alert",
+               "listener"
+            ],
+            "VPCSecurityGroups": [
+               null
+            ]
+         }
+      },
+      "SecurityGroup": {
+         "Type": "AWS::EC2::SecurityGroup",
+         "Properties": {
+            "GroupName": null,
+            "GroupDescription": "Allow port 1525",
+            "SecurityGroupIngress": [
+               {
+                  "CidrIp": "172.17.104.107/32",
+                  "IpProtocol": "tcp",
+                  "FromPort": 1525,
+                  "ToPort": 1525,
+                  "Description": "exa-scan"
+               },
+			   {
+                  "CidrIp": "70.123.144.110/32",
+                  "IpProtocol": "tcp",
+                  "FromPort": 1525,
+                  "ToPort": 1525,
+                  "Description": "Kirk Home Network"
+               },
+               {
+                  "CidrIp": "172.17.104.106/32",
+                  "IpProtocol": "tcp",
+                  "FromPort": 1525,
+                  "ToPort": 1525,
+                  "Description": "exa-scan"
+               },
+               {
+                  "CidrIp": "172.17.104.108/32",
+                  "IpProtocol": "tcp",
+                  "FromPort": 1525,
+                  "ToPort": 1525,
+                  "Description": "exa-scan"
+               },
+               {
+                  "CidrIp": "128.83.186.108/32",
+                  "IpProtocol": "tcp",
+                  "FromPort": 0,
+                  "ToPort": 65535,
+                  "Description": "Kirk-workstation"
+               },
+               {
+                  "CidrIp": "128.83.186.107/32",
+                  "IpProtocol": "tcp",
+                  "FromPort": 0,
+                  "ToPort": 65535,
+                  "Description": "Kevin-workstation"
+               },
+               {
+                  "CidrIp": "172.129.12.64/26",
+                  "IpProtocol": "tcp",
+                  "FromPort": 0,
+                  "ToPort": 65535,
+                  "Description": "its-systems-vpn"
+               },
+               {
+                  "CidrIp": "146.6.182.221/32",
+                  "IpProtocol": "tcp",
+                  "FromPort": 0,
+                  "ToPort": 65535,
+                  "Description": "James-workstation"
+               }
+            ],
+            "VpcId": {
+               "Fn::ImportValue": null
+            }
+         }
+      }
+   },
+   "Outputs": {
+      "OracleJDBCConnectionString": {
+         "Description": "JDBC connection string for Oracle database",
+         "Value": {
+            "Fn::Join": [
+               "",
+               "- jdbc:oracle:thin:@\n- Fn::GetAtt:\n  - DBInstance\n  - Endpoint.Address\n- \":\"\n- Fn::GetAtt:\n  - DBInstance\n  - Endpoint.Port\n- \":\"\n- Ref: DBInstance"
+            ]
+         }
+      },
+      "OracleConnectionString": {
+         "Description": "Connection string for Oracle database",
+         "Value": {
+            "Fn::Join": [
+               "",
+               "- '(DESCRIPTION=(CONNECT_DATA=(SERVICE_NAME=ORCL'\n- '))(ADDRESS=(PROTOCOL=TCP)(HOST='\n- Fn::GetAtt:\n  - DBInstance\n  - Endpoint.Address\n- ')(PORT='\n- Fn::GetAtt:\n   - DBInstance\n   - Endpoint.Port\n- ')))'"
+            ]
+         }
+      },
+      "DBEndpoint": {
+         "Description": "DB Endpoint",
+         "Value": null,
+         "Export": {
+            "Name": null
+         }
+      },
+      "SecurityGroup": {
+         "Description": "DB Security Group",
+         "Value": null,
+         "Export": {
+            "Name": null
+         }
+      }
+   }
+}
