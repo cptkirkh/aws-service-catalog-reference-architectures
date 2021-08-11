@@ -42,7 +42,7 @@
         "PortfolioProvider": {
             "Type":"String",
             "Description":"Provider Name",
-            "Default":"IT Services"
+            "Default":"Campus Solutions"
         },
        "PorfolioName": {
             "Type":"String",
